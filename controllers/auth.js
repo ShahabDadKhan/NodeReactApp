@@ -9,7 +9,7 @@ export const register = async (req, res) => {
     const {
       firstName,
       lastName,
-      emial,
+      email,
       password,
       picturePath,
       friends,
@@ -25,7 +25,7 @@ export const register = async (req, res) => {
     const newUser = new User({
       firstName,
       lastName,
-      emial,
+      email,
       password: passwordHash, //Using here our own encrypted password instead of just plain passowrd that user sends
       picturePath,
       friends,
@@ -41,6 +41,28 @@ export const register = async (req, res) => {
     // Sending back the newly created user
     res.status(201).json(savedUser);
   } catch (arr) {
-    res.status(500).json({ arror: err.message });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Logging In Function
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    // checking user
+    const user = await User.findOne({ email: email });
+    if (!user) res.status(400).json({ error: "User does not exist." });
+
+    // checking user password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) res.status(400).json({ error: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user.__id }, process.env.JWT__SECRET);
+    // Deleting user password so that is doesn't send it to frontend and be xposed
+    delete user.password;
+    res.status(200).json({ token, user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
